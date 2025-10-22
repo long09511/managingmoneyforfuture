@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 Quản Lý Cảm Xúc & Ngân Sách (USD) V2.0</title>
+    <style>
+        :root {
+            --main-color: #3f51b5; /* Xanh dương */
+            --main-color-dark: #303f9f;
+            --income-color: #4CAF50; /* Xanh lá */
+            --expense-color: #F44336; /* Đỏ */
+            --warning-color: #FF9800; /* Cam cảnh báo nhẹ */
+            --emotional-alert-color: #795548; /* Màu Nâu cho cảnh báo cảm xúc */
+            --text-color: #333;
+            --border-radius-large: 15px;
+            --border-radius-small: 8px; /* Dùng cho tất cả các input, select, button */
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background-color: #ffffff;
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow);
+            padding: 20px; /* Giảm padding trên mobile */
+        }
+
+        h1 {
+            color: var(--main-color);
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            font-size: 1.8em;
+        }
+        
+        /* --- Tổng quan và Cảnh báo Cảm xúc --- */
+        #summary-section {
+            display: flex;
+            flex-wrap: wrap; /* Cho phép xuống dòng trên mobile */
+            justify-content: space-between;
+            gap: 10px; /* Khoảng cách giữa các box */
+            margin-bottom: 15px;
+        }
+
+        .summary-box {
+            flex: 1 1 30%; /* Cho phép co dãn */
+            min-width: 150px; /* Giữ kích thước tối thiểu */
+            padding: 15px 10px;
+            text-align: center;
+            border-radius: var(--border-radius-small);
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        #net-balance { background-color: var(--main-color); color: white; }
+        #total-income { background-color: var(--income-color); color: white; }
+        #total-expense { background-color: var(--expense-color); color: white; }
+        
+        #emotional-alert {
+            margin-top: 20px;
+            padding: 20px;
+            text-align: center;
+            border-radius: var(--border-radius-large);
+            font-weight: 500;
+            background-color: #fff3e0;
+            color: var(--emotional-alert-color);
+            border: 3px solid var(--emotional-alert-color);
+            display: none; 
+            line-height: 1.6;
+        }
+        
+        .alert-active {
+            display: block !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+            100% { transform: scale(1); }
+        }
+
+
+        /* --- Khu vực Nhập liệu và Thử thách/Ngân sách Khác --- */
+        #input-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        #challenge-section, #category-section {
+            padding: 15px;
+            border: 2px dashed var(--main-color);
+            border-radius: var(--border-radius-large);
+            background-color: #e8eaf6;
+            margin-top: 10px;
+        }
+        
+        #challenge-section h3 { margin-top: 0; color: var(--main-color); text-align: center; }
+        #challenge-section input, #challenge-section button { margin-bottom: 8px; width: 100%; box-sizing: border-box;}
+        #challenge-section button { background-color: var(--main-color); }
+        #challenge-status { font-size: 0.9em; padding: 5px; border-radius: var(--border-radius-small); margin-top: 10px; font-weight: bold;}
+        
+        /* --- Form chung & Cải tiến bo tròn --- */
+        #transaction-form {
+            display: flex; /* Dùng flexbox để dễ quản lý trên mobile */
+            flex-wrap: wrap; 
+            gap: 10px;
+            padding: 15px;
+            border-radius: var(--border-radius-large);
+            background-color: #e8eaf6;
+        }
+
+        input[type="text"], 
+        input[type="number"], 
+        input[type="date"], 
+        select, 
+        #transaction-form button:not(#add-transaction-btn) {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius-small); /* Áp dụng bo tròn */
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            -webkit-appearance: none; /* Cần thiết để custom select trên iOS */
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* Tăng kích thước input cho form chính trên desktop */
+        #transaction-form > * {
+             flex: 1 1 100%;
+        }
+        #transaction-form #type { flex: 1 1 20%; }
+        #transaction-form #description { flex: 1 1 40%; }
+        #transaction-form #amount { flex: 1 1 20%; }
+        #transaction-form #add-transaction-btn { flex: 1 1 50px; }
+
+        button {
+            padding: 12px 15px;
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-small); /* Áp dụng bo tròn */
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        #add-transaction-btn { 
+            background-color: var(--income-color); 
+            font-size: 20px;
+        }
+        #add-transaction-btn:hover { background-color: #43A047; }
+        #add-transaction-btn:active { background-color: var(--income-color); } /* Giữ màu khi nhấn trên mobile */
+
+        /* --- Danh Sách Chi tiết --- */
+        #transaction-list-container {
+            margin-top: 25px;
+        }
+        #transaction-list-container h2 {
+            font-size: 1.3em;
+            color: var(--main-color-dark);
+            margin-top: 25px;
+            border-left: 5px solid var(--main-color);
+            padding-left: 10px;
+        }
+
+        #transaction-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #transaction-list li {
+            display: grid;
+            grid-template-columns: 1fr 3fr 1fr 1fr 50px; 
+            gap: 10px;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background-color: #ffffff;
+            border: 1px solid #eee;
+            border-radius: var(--border-radius-small);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .type-label {
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 3px 6px;
+            text-align: center;
+        }
+        .type-income { background-color: var(--income-color); color: white; }
+        .type-expense { background-color: var(--expense-color); color: white; }
+
+        .transaction-amount {
+            font-weight: bold;
+            text-align: right;
+        }
+        
+        .delete-btn {
+            background-color: transparent;
+            color: #999;
+            padding: 5px;
+            font-size: 16px;
+            font-weight: normal;
+            border: none; /* Bỏ border để trông nhẹ nhàng hơn */
+        }
+        .delete-btn:hover {
+            color: var(--expense-color);
+        }
+        
+        .clear-all-btn {
+            background-color: #555; 
+            margin-top: 20px;
+            width: 100%;
+        }
+        .clear-all-btn:hover { background-color: #333; }
+
+        /* --- CÁC TÍNH NĂNG MỚI (Category & Search) --- */
+        .select-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .select-group select {
+            flex: 1;
+        }
+
+        /* --- RESPONSIVE CHO MÀN HÌNH NHỎ (MOBILE) --- */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            #summary-section {
+                flex-direction: column; /* Xếp chồng trên mobile */
+            }
+
+            .summary-box {
+                flex: 1 1 100%;
+                margin: 0;
+                margin-bottom: 10px;
+            }
+            
+            #input-section {
+                grid-template-columns: 1fr; /* Một cột duy nhất */
+                gap: 15px;
+            }
+            
+            /* Tối ưu form nhập liệu chính trên mobile */
+            #transaction-form {
+                flex-direction: column;
+                gap: 15px;
+            }
+            #transaction-form > * {
+                flex: 1 1 100% !important;
+            }
+            #transaction-form #add-transaction-btn {
+                padding: 15px;
+            }
+            
+            /* Tối ưu danh sách giao dịch trên mobile */
+            #transaction-list li {
+                grid-template-columns: 1fr 2fr 1fr 40px; /* Bỏ cột Ngày */
+                font-size: 0.9em;
+            }
+            #transaction-list li span:nth-child(4) { /* Ẩn ngày */
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>SỔ TAY QUẢN LÝ CẢM XÚC & TÀI CHÍNH 💖 V2.0</h1>
+
+        <div id="summary-section">
+            <div class="summary-box" id="net-balance">Số Dư Ròng: $0.00</div>
+            <div class="summary-box" id="total-income">Tổng Thu Nhập: $0.00</div>
+            <div class="summary-box" id="total-expense">Tổng Chi Tiêu: $0.00</div>
+        </div>
+        
+        <div id="emotional-alert"></div>
+
+        <div id="input-section">
+            
+            <div id="transaction-input-group">
+                <h3>Thêm Giao Dịch Mới</h3>
+                <form id="transaction-form">
+                    <select id="type" required>
+                        <option value="expense">💸 Chi Tiêu</option>
+                        <option value="income">💰 Thu Nhập</option>
+                    </select>
+                    <input type="text" id="description" placeholder="Mô tả cụ thể" required>
+                    <input type="number" id="amount" placeholder="Số tiền (USD)" required min="0.01" step="0.01">
+                    <select id="category" required>
+                        <option value="" disabled selected>Chọn Loại</option>
+                        <option value="Ăn uống">Ăn uống 🍔</option>
+                        <option value="Di chuyển">Di chuyển 🚌</option>
+                        <option value="Nhà cửa">Nhà cửa/Thuê 🏡</option>
+                        <option value="Giáo dục">Giáo dục 📚</option>
+                        <option value="Giải trí">Giải trí/Phim 🎬</option>
+                        <option value="Lương">Lương/Thưởng 💼</option>
+                        <option value="Khác">Khác 🤔</option>
+                    </select>
+                    <input type="date" id="date" title="Ngày giao dịch" required>
+                    <button type="submit" id="add-transaction-btn" title="Thêm Giao Dịch">➕</button>
+                </form>
+            </div>
+            
+            <div id="challenge-section">
+                <h3>⏰ Thử Thách & Ngân Sách</h3>
+                <input type="number" id="challenge-limit" placeholder="Giới hạn Chi tiêu (USD)" min="0" step="1">
+                <select id="challenge-period">
+                    <option value="date">Đến Ngày...</option>
+                    <option value="week">1 Tuần</option>
+                    <option value="month">1 Tháng</option>
+                </select>
+                <input type="date" id="challenge-end-date" title="Ngày kết thúc thử thách">
+                <button onclick="setChallenge()">Thiết Lập Thử Thách</button>
+                <div id="challenge-status">Chưa thiết lập.</div>
+            </div>
+            
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #ccc; margin: 30px 0;">
+
+        <div id="transaction-list-container">
+            <h2>Lịch Sử Giao Dịch Chi Tiết</h2>
+            
+            <div class="select-group">
+                <select id="filter-type" onchange="renderList()">
+                    <option value="all">Lọc: Tất Cả</option>
+                    <option value="income">Lọc: Thu Nhập</option>
+                    <option value="expense">Lọc: Chi Tiêu</option>
+                </select>
+                <select id="filter-category" onchange="renderList()">
+                    <option value="all">Lọc: Theo Loại (Tất cả)</option>
+                    </select>
+                <input type="text" id="search-input" onkeyup="renderList()" placeholder="Tìm kiếm theo mô tả...">
+            </div>
+
+            <ul id="transaction-list">
+            </ul>
+        </div>
+        
+        <button onclick="clearAllData()" class="clear-all-btn">Xóa Toàn Bộ Dữ Liệu</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCategoryFilter();
+            loadTransactions();
+            document.getElementById('transaction-form').addEventListener('submit', addTransaction);
+            document.getElementById('challenge-period').addEventListener('change', updateChallengeEndDate);
+            // Thiết lập ngày mặc định là hôm nay cho input date
+            document.getElementById('date').valueAsDate = new Date(); 
+        });
+
+        let transactions = [];
+        let challenge = { limit: 0, endDate: null, startDate: null }; 
+
+        // Cảnh báo xúc động khi số dư ròng còn 30% tổng thu nhập ban đầu
+        const WARNING_THRESHOLD = 0.30; 
+        const EMOTIONAL_MESSAGE = `
+            Hãy dừng lại một chút, bạn của tôi. 😔 Số tiền còn lại đang dần cạn kiệt, chỉ còn **dưới 30%** so với thu nhập bạn đã có.
+            Hãy nhớ về những giọt mồ hôi và sự cực khổ mà **cha mẹ** bạn đã phải đổ ra để có được số tiền này. Mỗi đồng tiền là sự hy sinh.
+            Liệu món đồ bạn sắp mua có thật sự quan trọng bằng sự **bình yên tài chính** và lòng biết ơn của bạn không?
+            **TẠM DỪNG CHI TIÊU NGAY BÂY GIỜ!**
+        `;
+        
+        const expenseCategories = ["Ăn uống", "Di chuyển", "Nhà cửa", "Giáo dục", "Giải trí", "Khác"];
+        const incomeCategories = ["Lương", "Khác"];
+        const allCategories = [...new Set([...expenseCategories, ...incomeCategories])];
+
+        function formatUSD(number) {
+            return number.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+        }
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+        
+        function populateCategoryFilter() {
+            const filterSelect = document.getElementById('filter-category');
+            allCategories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = `Lọc: ${cat}`;
+                filterSelect.appendChild(option);
+            });
+        }
+        
+        function updateChallengeEndDate() {
+            const period = document.getElementById('challenge-period').value;
+            const endDateInput = document.getElementById('challenge-end-date');
+            const today = new Date();
+            let endDate = new Date(today);
+            
+            if (period === 'week') {
+                endDate.setDate(today.getDate() + 7);
+                endDateInput.value = endDate.toISOString().split('T')[0];
+                endDateInput.disabled = true;
+            } else if (period === 'month') {
+                endDate.setMonth(today.getMonth() + 1);
+                endDateInput.value = endDate.toISOString().split('T')[0];
+                endDateInput.disabled = true;
+            } else { // 'date'
+                endDateInput.disabled = false;
+                endDateInput.value = '';
+            }
+        }
+
+
+        // --- Tải và Lưu dữ liệu (LocalStorage) ---
+
+        function loadTransactions() {
+            const storedData = localStorage.getItem('financialDataV3'); // Dùng V3 để tránh xung đột
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                transactions = data.transactions || [];
+                challenge = data.challenge || { limit: 0, endDate: null, startDate: null };
+            }
+            renderAll();
+        }
+
+        function saveTransactions() {
+            const data = {
+                transactions: transactions,
+                challenge: challenge
+            };
+            localStorage.setItem('financialDataV3', JSON.stringify(data));
+        }
+
+        // --- Thiết lập Thử thách Ngân sách có thời hạn ---
+        
+        function setChallenge() {
+            const limitInput = document.getElementById('challenge-limit');
+            const dateInput = document.getElementById('challenge-end-date');
+            const periodInput = document.getElementById('challenge-period');
+            
+            const newLimit = parseFloat(limitInput.value);
+            const newDate = dateInput.value;
+
+            if (isNaN(newLimit) || newLimit < 0 || !newDate) {
+                alert('Vui lòng nhập Giới hạn chi tiêu hợp lệ và Ngày kết thúc/khoảng thời gian thử thách.');
+                return;
+            }
+            
+            const today = new Date().setHours(0, 0, 0, 0);
+            const endDate = new Date(newDate).setHours(0, 0, 0, 0);
+
+            if (endDate < today) {
+                alert('Ngày kết thúc phải là hôm nay hoặc một ngày trong tương lai.');
+                return;
+            }
+
+            challenge = { 
+                limit: newLimit, 
+                endDate: newDate, 
+                startDate: new Date().toISOString().split('T')[0], // Bắt đầu từ ngày thiết lập
+                period: periodInput.value
+            };
+            saveTransactions();
+            renderSummary();
+            limitInput.value = '';
+            dateInput.value = '';
+            alert(`Thử thách chi tiêu đã được thiết lập: ${formatUSD(challenge.limit)} từ ${formatDate(challenge.startDate)} đến ${formatDate(challenge.endDate)}.`);
+        }
+
+        // --- Xử lý Thêm Giao Dịch ---
+        
+        function addTransaction(event) {
+            event.preventDefault();
+
+            const typeInput = document.getElementById('type');
+            const descriptionInput = document.getElementById('description');
+            const amountInput = document.getElementById('amount');
+            const categoryInput = document.getElementById('category');
+            const dateInput = document.getElementById('date');
+            
+            const type = typeInput.value;
+            const description = descriptionInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            const category = categoryInput.value;
+            const date = dateInput.value;
+
+
+            if (description && amount > 0 && category) {
+                const newTransaction = {
+                    id: Date.now(), 
+                    type: type, 
+                    description: description,
+                    amount: amount,
+                    category: category,
+                    date: date // Lưu dưới dạng YYYY-MM-DD để dễ sắp xếp
+                };
+
+                transactions.push(newTransaction);
+                saveTransactions();
+                renderAll();
+
+                // Xóa nội dung nhập liệu (trừ type và category để tiện nhập nhanh)
+                descriptionInput.value = '';
+                amountInput.value = '';
+                dateInput.valueAsDate = new Date();
+                categoryInput.selectedIndex = 0;
+            } else {
+                alert('Vui lòng nhập Mô tả, Số tiền (> 0.01) và Chọn Loại hợp lệ.');
+            }
+        }
+        
+        // --- Xử lý Xóa Giao Dịch Cá nhân ---
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveTransactions();
+            renderAll();
+        }
+
+        // --- Xử lý Hiển thị Tổng quan, Cảnh báo và Thử thách ---
+
+        function renderSummary() {
+            const totalIncome = transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            // Chỉ tính chi tiêu trong thời gian thử thách nếu thử thách đang hoạt động
+            let totalExpense = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            let challengeExpense = 0;
+            const netBalance = totalIncome - totalExpense;
+            
+            // Cập nhật các Box tổng quan
+            document.getElementById('total-income').textContent = `Tổng Thu Nhập: ${formatUSD(totalIncome)}`;
+            document.getElementById('total-expense').textContent = `Tổng Chi Tiêu: ${formatUSD(totalExpense)}`;
+            document.getElementById('net-balance').textContent = `Số Dư Ròng: ${formatUSD(netBalance)}`;
+
+            // 1. CẢNH BÁO CẢM XÚC
+            const alertBox = document.getElementById('emotional-alert');
+            const thresholdValue = totalIncome * WARNING_THRESHOLD;
+
+            if (totalIncome > 0 && netBalance <= thresholdValue) {
+                alertBox.innerHTML = EMOTIONAL_MESSAGE;
+                alertBox.classList.add('alert-active');
+            } else {
+                alertBox.classList.remove('alert-active');
+                alertBox.innerHTML = '';
+            }
+
+            // 2. CẬP NHẬT THỬ THÁCH
+            const statusDiv = document.getElementById('challenge-status');
+            
+            if (challenge.limit > 0 && challenge.endDate && challenge.startDate) {
+                const endDate = new Date(challenge.endDate);
+                const startDate = new Date(challenge.startDate);
+                const today = new Date();
+                
+                // Lọc chi tiêu chỉ trong thời gian thử thách
+                challengeExpense = transactions
+                    .filter(t => t.type === 'expense')
+                    .filter(t => {
+                        const tDate = new Date(t.date);
+                        // Chỉ tính những chi tiêu từ ngày bắt đầu đến ngày kết thúc
+                        return tDate >= startDate && tDate <= endDate;
+                    })
+                    .reduce((sum, t) => sum + t.amount, 0);
+
+                const remaining = challenge.limit - challengeExpense;
+                
+                let challengeMessage = `**THỬ THÁCH** [${formatDate(challenge.startDate)} - ${formatDate(challenge.endDate)}]. <br>`;
+                challengeMessage += `Đã chi: ${formatUSD(challengeExpense)}. Giới hạn: ${formatUSD(challenge.limit)}.`;
+
+                if (today > endDate) {
+                    challengeMessage += ` **(ĐÃ KẾT THÚC)**.`;
+                    statusDiv.style.backgroundColor = '#ccc';
+                    statusDiv.style.color = 'var(--text-color)';
+                } else if (remaining <= 0) {
+                    challengeMessage += ` **VƯỢT GIỚI HẠN!** Vượt: ${formatUSD(Math.abs(remaining))}.`;
+                    statusDiv.style.backgroundColor = 'var(--expense-color)';
+                    statusDiv.style.color = 'white';
+                } else {
+                    challengeMessage += ` **CÒN LẠI:** ${formatUSD(remaining)}.`;
+                    statusDiv.style.backgroundColor = 'var(--income-color)';
+                    statusDiv.style.color = 'white';
+                }
+                statusDiv.innerHTML = challengeMessage;
+
+            } else {
+                statusDiv.textContent = 'Chưa thiết lập thử thách.';
+                statusDiv.style.backgroundColor = 'transparent';
+                statusDiv.style.color = 'var(--text-color)';
+            }
+        }
+        
+        // --- Xử lý Hiển thị Danh sách Giao Dịch và Lọc/Tìm kiếm ---
+
+        function renderList() {
+            const listElement = document.getElementById('transaction-list');
+            const filterType = document.getElementById('filter-type').value;
+            const filterCategory = document.getElementById('filter-category').value;
+            const searchInput = document.getElementById('search-input').value.toLowerCase().trim();
+            listElement.innerHTML = ''; 
+
+            let filteredTransactions = [...transactions];
+            
+            // Lọc theo Loại (Thu/Chi)
+            if (filterType !== 'all') {
+                filteredTransactions = filteredTransactions.filter(t => t.type === filterType);
+            }
+
+            // Lọc theo Danh mục
+            if (filterCategory !== 'all') {
+                filteredTransactions = filteredTransactions.filter(t => t.category === filterCategory);
+            }
+            
+            // Tìm kiếm theo Mô tả
+            if (searchInput) {
+                 filteredTransactions = filteredTransactions.filter(t => t.description.toLowerCase().includes(searchInput));
+            }
+
+            // Sắp xếp theo ngày (mới nhất lên đầu)
+            const sortedTransactions = filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedTransactions.forEach(item => {
+                const listItem = document.createElement('li');
+                const typeClass = item.type === 'income' ? 'type-income' : 'type-expense';
+                const typeText = item.type === 'income' ? 'Thu' : 'Chi';
+                
+                listItem.innerHTML = `
+                    <span class="type-label ${typeClass}">${typeText}</span>
+                    <span>${item.description} (${item.category})</span>
+                    <span class="transaction-amount" style="color: ${item.type === 'income' ? var_income_color : var_expense_color}">${formatUSD(item.amount)}</span>
+                    <span style="font-size: 0.9em; color: #777;">${formatDate(item.date)}</span>
+                    <button class="delete-btn" onclick="deleteTransaction(${item.id})" title="Xóa giao dịch này">✖</button>
+                `;
+                
+                listElement.appendChild(listItem);
+            });
+            
+            if (sortedTransactions.length === 0) {
+                 listElement.innerHTML = '<li style="text-align: center; color: #999;">Không tìm thấy giao dịch nào phù hợp.</li>';
+            }
+        }
+        
+        // --- Hàm Tổng hợp Hiển thị và Xóa Toàn bộ ---
+        
+        function renderAll() {
+            renderSummary();
+            renderList();
+        }
+
+        function clearAllData() {
+            if (confirm('Bạn có chắc chắn muốn xóa TẤT CẢ dữ liệu giao dịch và thử thách không? Việc này không thể hoàn tác.')) {
+                transactions = [];
+                challenge = { limit: 0, endDate: null, startDate: null };
+                localStorage.removeItem('financialDataV3');
+                renderAll();
+                document.getElementById('challenge-limit').value = '';
+                document.getElementById('challenge-end-date').value = '';
+                document.getElementById('challenge-period').value = 'date';
+                updateChallengeEndDate();
+            }
+        }
+        
+        // Định nghĩa các biến màu cho JavaScript sử dụng
+        const getStyle = (prop) => getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+        const var_income_color = getStyle('--income-color');
+        const var_expense_color = getStyle('--expense-color');
+
+    </script>
+
+</body>
+</html>
